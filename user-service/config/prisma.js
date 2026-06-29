@@ -1,7 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const {config} = require('./');
-const connectionString = config.DATABASE_URL;
+const connectionString = process.env.DATABASE_URL;
 
 const globalForPrisma = global;
 
