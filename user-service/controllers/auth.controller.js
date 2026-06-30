@@ -1,6 +1,7 @@
 const asyncHandler = require('../utils/asyncHandler');
 const { BadRequestError, UnauthorizedError } = require("../utils/error");
 const authService = require('../serviecs/auth.service');
+const getDeviceFingerprint = require('../utils/deviceFingerprint');
 exports.sendOTP = asyncHandler(async(req, res) => {
     const {firstName, lastName, email, password, confirmPassword} = req.body;
     if(!firstName || !lastName || !email || !password || !confirmPassword){
@@ -33,3 +34,51 @@ exports.verifyOTP = asyncHandler(async (req, res) => {
         data: user
     })
 });
+exports.login = asyncHandler(async(req, res) => {
+    const {email, password} = req.body;
+    if(!email || !password){
+        throw new BadRequestError("Email and Password are required");
+    }
+    const deviceId = getDeviceFingerprint(req);
+    const {accessToken, refreshToken, loggedInUser} = await authService.login(email, password, deviceId);
+    res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: process.env.ACCESS_TOKEN_EXP_SEC * 1000
+    });
+    res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: process.env.REFRESH_TOKEN_EXP_SEC * 1000
+    }).status(200).json({
+        success: true,
+        message: "logged in successfully",
+        loggedInUser
+    });
+});
+exports.rotateRefreshToken = asyncHandler(async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+    if(!refreshToken){
+        throw new UnauthorizedError("Refresh Token is missing", "LOGIN AGAIN");
+    }
+    const deviceId = getDeviceFingerprint(req);
+    const {newAccessToken, newRefreshToken} = await authService.rotateRefreshToken(refreshToken, deviceId);
+    res.cookie("accessToken", newAccessToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: process.env.ACCESS_TOKEN_EXP_SEC * 1000
+    });
+    res.cookie("refreshToken", newRefreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: process.env.REFRESH_TOKEN_EXP_SEC * 1000
+    }).status(200).json({
+        success: true,
+        message: "access and refresh token re-issued",
+        loggedInUser
+    });
+})
