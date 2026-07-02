@@ -21,4 +21,18 @@ model user{
   emailVerified Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  AuthProviders AuthProvider[]
+}
+
+model AuthProvider{
+  id String @id @default(uuid())
+  provider String
+  providerId String
+  userId String
+  createdAt DateTime @default(now())
+  updatedAT DateTime @updatedAt
+  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerId])
+  @@unique([userId, provider])
+  @@index([userId])
 }

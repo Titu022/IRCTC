@@ -10,7 +10,13 @@ module.exports = (err, req, res, next) => {
                message: err.message
           });
      }
-
+     // in your global error middleware
+     if (err.code === 'P2002') {
+     return res.status(409).json({
+          success: false,
+          message: "Account already exists, please try logging in again"
+     });
+     }
      console.error("UNHANDLED ERROR:", err);
 
      if(config.NODE_ENV !== "production"){
