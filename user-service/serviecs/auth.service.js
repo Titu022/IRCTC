@@ -9,6 +9,8 @@ const {redis} = require("../config/redis");
 const { use } = require("../routes/auth.route");
 const {OAuth2Client} = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const notificationProducer = require('../kafka/producer/notification.producer');
+const logger = require('../config/logger');
 const sendOTP = async(firstName, lastName, email, password) => {
     const existingUser = await prisma.user.findUnique({
         where: {email}
@@ -19,7 +21,8 @@ const sendOTP = async(firstName, lastName, email, password) => {
     const hashedPassword = await bcrypt.hash(password, 12);
     const meta = {firstName, lastName, email, hashedPassword};
     const {otp, otpSessionId} = await generateAndStoreOtp(meta);
-    await sendOtpEmail(email, otp);
+    await notificationProducer.sendOtpEmail(email, otp, process.env.OTP_TTL / 60);
+    logger.info(`OTP queued for: ${email}`);
     return {otpSessionId};
 }
 const verifyOTP = async(otp, otpSessionId) => {
@@ -36,7 +39,7 @@ const verifyOTP = async(otp, otpSessionId) => {
             emailVerified: true
         }
     });
-    await sendWelcomeEmail(meta.email, meta.firstName);
+    await notificationProducer.sendWelcomeEmail(meta.email, meta.firstName);
     return user;
 }
 const login = async (email, password, deviceId) => {
