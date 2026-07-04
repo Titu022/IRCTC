@@ -2,7 +2,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const { BadRequestError } = require('../utils/error');
 const userService = require('../serviecs/user.service');
 exports.getProfile = asyncHandler(async(req, res) => {
-    const userId = req.headers['x-user-id'];
+    const userId = req.user.id;
     if(!userId){
         throw new BadRequestError("user id is missing");
     }
