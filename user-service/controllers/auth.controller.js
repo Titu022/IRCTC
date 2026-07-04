@@ -43,13 +43,13 @@ exports.login = asyncHandler(async(req, res) => {
     const {accessToken, refreshToken, loggedInUser} = await authService.login(email, password, deviceId);
     res.cookie("accessToken", accessToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: process.env.ACCESS_TOKEN_EXP_SEC * 1000
     });
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: process.env.REFRESH_TOKEN_EXP_SEC * 1000
     }).status(200).json({
@@ -67,13 +67,13 @@ exports.rotateRefreshToken = asyncHandler(async (req, res) => {
     const {newAccessToken, newRefreshToken} = await authService.rotateRefreshToken(refreshToken, deviceId);
     res.cookie("accessToken", newAccessToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: process.env.ACCESS_TOKEN_EXP_SEC * 1000
     });
     res.cookie("refreshToken", newRefreshToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: process.env.REFRESH_TOKEN_EXP_SEC * 1000
     }).status(200).json({
@@ -93,13 +93,13 @@ exports.verifyGoogleIdToken = asyncHandler(async(req, res) => {
     
     res.cookie("accessToken", accessToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: process.env.ACCESS_TOKEN_EXP_SEC * 1000
     });
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: process.env.REFRESH_TOKEN_EXP_SEC * 1000
     }).status(200).json({

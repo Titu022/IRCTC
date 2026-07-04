@@ -1,5 +1,5 @@
+// middlewares/error.middleware.js
 const { AppError } = require('../utils/error');
-const {config} = require('../config');
 const logger = require('../config/logger');
 
 module.exports = (err, req, res, next) => {
@@ -11,13 +11,6 @@ module.exports = (err, req, res, next) => {
           });
      }
 
-     if (err.code === 'P2002') {
-     return res.status(409).json({
-          success: false,
-          message: "Account already exists, please try logging in again"
-     });
-     }
-     
      console.error("UNHANDLED ERROR:", err);
 
      if(process.env.NODE_ENV !== "production"){
