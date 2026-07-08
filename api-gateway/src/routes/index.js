@@ -20,6 +20,25 @@ router.get('/users/user/profile', requireAuth, combinedRateLimit(), userServiceP
 // --- Admin Services routes ---
 router.post('/admins/stations/station', requireAuth, combinedRateLimit(), adminServiceProxy)
 router.post('/admins/trains/train', requireAuth, combinedRateLimit(), adminServiceProxy);
+router.get(
+     '/admins/stations/station',
+     requireAuth,
+     combinedRateLimit(),
+     adminServiceProxy
+)
+router.get(
+     '/admins/stations/station/:stationId',
+     requireAuth,
+     combinedRateLimit(),
+     adminServiceProxy
+)
+router.get(
+     '/admins/trains/train/:trainId',
+     requireAuth,
+     combinedRateLimit(),
+     adminServiceProxy
+);
+router.get('/admins/trains/train', requireAuth, combinedRateLimit(), adminServiceProxy)
 // --- Gateway health check ---
 router.get('/gateway/health', (req, res) => {
     res.status(200).json({
