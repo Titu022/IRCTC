@@ -46,4 +46,40 @@ const createTrain = async(data) => {
     return train;
 }
 
-module.exports = {createTrain};
+const getAllTrains = async () => {
+     return prisma.train.findMany({
+          include: {
+               seats: { orderBy: { seatNumber: 'asc' } },
+               route: {
+                    include: {
+                         routeStations: {
+                              include: { station: true },
+                              orderBy: { sequenceNumber: 'asc' },
+                         },
+                    },
+               },
+          },
+          orderBy: { trainNumber: 'asc' },
+     });
+};
+
+const getTrainById = async (id) => {
+     const train = await prisma.train.findUnique({
+          where: { id },
+          include: {
+               seats: { orderBy: { seatNumber: 'asc' } },
+               route: {
+                    include: {
+                         routeStations: {
+                              include: { station: true },
+                              orderBy: { sequenceNumber: 'asc' },
+                         },
+                    },
+               },
+          },
+     });
+     if (!train) throw new NotFoundError('Train not found');
+     return train;
+};
+
+module.exports = {createTrain, getAllTrains, getTrainById};

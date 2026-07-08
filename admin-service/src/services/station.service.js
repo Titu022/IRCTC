@@ -1,4 +1,4 @@
-const { ConflictError } = require("../utils/error");
+const { ConflictError, BadRequestError, NotFoundError } = require("../utils/error");
 const adminProducer = require('../kafka/producer/admin.producer');
 const prisma = require('../config/prisma');
 const logger = require('../config/logger')
@@ -27,4 +27,42 @@ const createStation = async (data) => {
     return station;
 }
 
-module.exports = {createStation};
+const getAllStations = async(page, limit, search) => {
+     const skip = (page - 1) * limit;
+
+     const where = search ? {
+          OR: [
+               { code: { contains: search, mode: 'insensitive' } },
+               { name: { contains: search, mode: 'insensitive' } },
+               { city: { contains: search, mode: 'insensitive' } }
+          ]
+     } : {};
+
+     const [stations, total] = await Promise.all([
+          prisma.station.findMany({
+               where,
+               skip,
+               take: limit,
+               orderBy: {
+                    name: 'asc'
+               }
+          }),
+          prisma.station.count({ where })
+     ]);
+
+     return { stations, total };
+}
+
+const getStationById = async(stationId) => {
+    const station = await prisma.station.findUnique({
+        where: {id: stationId}
+    });
+    
+    if(!station){
+        throw new NotFoundError("station not found");
+    }
+
+    return station;
+}
+
+module.exports = {createStation, getAllStations, getStationById};
