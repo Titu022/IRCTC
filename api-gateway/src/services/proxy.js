@@ -60,7 +60,8 @@ class CircuitBreaker{
 const CircuitBreakers = {
     userService: new CircuitBreaker('user-service'),
     bookingService: new CircuitBreaker('booking-service'),
-    searchService: new CircuitBreaker('search-service')
+    searchService: new CircuitBreaker('search-service'),
+    adminService: new CircuitBreaker('admin-service')
 };
 
 

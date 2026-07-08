@@ -6,7 +6,7 @@ const router = express.Router();
 
 // createProxy must NOT be async — see note above
 const userServiceProxy = createProxy('userService', process.env.USER_SERVICE_URL);
-
+const adminServiceProxy = createProxy('adminService', process.env.ADMIN_SERVICE_URL);
 // --- Auth flow (public, no requireAuth — these ARE the auth endpoints) ---
 router.post('/users/auth/send-otp', endpointRateLimit(5, 900000), userServiceProxy);
 router.post('/users/auth/verify-otp', endpointRateLimit(5, 900000), userServiceProxy);
@@ -17,6 +17,9 @@ router.post('/users/auth/google-auth', endpointRateLimit(10, 900000), userServic
 // --- Authenticated user routes ---
 router.get('/users/user/profile', requireAuth, combinedRateLimit(), userServiceProxy);
 
+// --- Admin Services routes ---
+router.post('/admins/stations/station', requireAuth, combinedRateLimit(), adminServiceProxy)
+router.post('/admins/trains/train', requireAuth, combinedRateLimit(), adminServiceProxy);
 // --- Gateway health check ---
 router.get('/gateway/health', (req, res) => {
     res.status(200).json({

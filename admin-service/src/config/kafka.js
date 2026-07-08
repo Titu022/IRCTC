@@ -1,0 +1,42 @@
+const { Kafka, logLevel } = require('kafkajs');
+const logger = require('./logger');
+const kafka = new Kafka({
+     clientId: process.env.KAFKA_CLIENT_ID,
+     brokers: [process.env.KAFKA_BROKER || 'localhost:9093'],
+     logLevel: logLevel.ERROR,
+     retry: {
+          initialRetryTime: 300,
+          retries: 8,
+          maxRetryTime: 30000,
+     },
+});
+
+const producer = kafka.producer({
+     allowAutoTopicCreation: true,
+     transactionTimeout: 30000,
+     idempotent: true, 
+     maxInFlightRequests: 5,
+     retry: {
+          retries: 5,
+     },
+});
+
+let isConnected = false;
+
+const connectProducer = async () => {
+     if (!isConnected) {
+          await producer.connect();
+          isConnected = true;
+          logger.info('Kafka producer connected');
+     }
+};
+
+const disconnectProducer = async () => {
+     if (isConnected) {
+          await producer.disconnect();
+          isConnected = false;
+          logger.info('Kafka producer disconnected');
+     }
+};
+
+module.exports = { kafka, producer, connectProducer, disconnectProducer };
