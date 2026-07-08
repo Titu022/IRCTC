@@ -5,7 +5,7 @@ const {createStation, getAllStations, getStationById} = require('../controllers/
 
 const router = express.Router();
 
-router.get("/station/internal/:stationId", internalAuth, getStationByIdInternal);
+//router.get("/station/internal/:stationId", internalAuth, getStationByIdInternal);
 
 router.get("/station", getUserContext, getAllStations);
 router.get("/station/:stationId", getUserContext, getStationById);
