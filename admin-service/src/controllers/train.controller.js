@@ -41,3 +41,23 @@ exports.getTrainById = asyncHandler(async(req, res) =>{
           data: train
      })
 })
+
+exports.createRoute = asyncHandler(async(req, res) => {
+    const {trainId, stations} = req.body;
+
+    if(!trainId || !stations){
+        throw new BadRequestError("trainId and stations are required");
+    }
+
+    if(stations.length < 2){
+        throw new BadRequestError("Route must have atleast 2 stations");
+    }
+
+    const route = await trainService.createRoute({trainId, stations});
+
+    return res.status(201).json({
+        success: true,
+        message: "route created",
+        data: route
+    });
+});

@@ -20,6 +20,7 @@ router.get('/users/user/profile', requireAuth, combinedRateLimit(), userServiceP
 // --- Admin Services routes ---
 router.post('/admins/stations/station', requireAuth, combinedRateLimit(), adminServiceProxy)
 router.post('/admins/trains/train', requireAuth, combinedRateLimit(), adminServiceProxy);
+router.post('/admins/trains/route', requireAuth, combinedRateLimit(), adminServiceProxy);
 router.get(
      '/admins/stations/station',
      requireAuth,

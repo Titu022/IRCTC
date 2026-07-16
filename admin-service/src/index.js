@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 // Routes
 const stationRoutes = require('./routes/station.route');
 const trainRoutes = require('./routes/train.route');
+const schedeuleRoutes = require('./routes/schedule.route');
 // Middlewares
 const { corsMiddleware } = require('./middlewares/cors.middleware');
 const errorHandler = require('./middlewares/error.middleware');
@@ -49,6 +50,7 @@ app.get('/health', (req, res) => {
 // API Routes - All protected by auth middleware
 app.use("/stations", stationRoutes);
 app.use('/trains', trainRoutes);
+app.use('/schedules', schedeuleRoutes);
 // Error handler (must be last)
 app.use(errorHandler);
 
