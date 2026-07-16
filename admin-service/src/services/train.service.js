@@ -150,8 +150,11 @@ const createRoute = async(data) => {
             }
         }
     });
-
-    await adminProducer.publishRouteCreated(route).catch((err) => {
+    const trainWithSeats = await prisma.train.findUnique({
+        where: { id: trainId },
+        include: { seats: { orderBy: { seatNumber: 'asc' } } },
+    });
+    await adminProducer.publishRouteCreated({...route, train:trainWithSeats}).catch((err) => {
         logger.error("error sending the event to kafka"),
         {error: err.message}
     });
