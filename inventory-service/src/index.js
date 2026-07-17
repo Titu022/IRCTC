@@ -59,9 +59,9 @@ const startServer = async () => {
           await inventoryConsumer.start();
           startLockExpiryJob();
 
-          const server = app.listen(config.PORT, () => {
+          const server = app.listen(process.env.PORT, () => {
                logger.info(
-                    `${config.SERVICE_NAME} is running on port ${config.PORT}`
+                    `${process.env.SERVICE_NAME} is running on port ${process.env.PORT}`
                );
           });
 
