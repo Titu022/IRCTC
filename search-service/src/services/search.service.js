@@ -1,5 +1,6 @@
 const logger = require('../config/logger');
 const {esClient, TRAIN_INDEX, STATION_INDEX} = require('../config/elasticsearch');
+const { resolve } = require('path');
 
 const  indexStation = async(event) => {
     const station = event.data;
@@ -123,8 +124,163 @@ const indexSchedule = async(scheduleEvent) => {
     }
 }
 
+const resolveStation = async(input) => {
+    const exactResult = await esClient.search({
+        index: STATION_INDEX,
+        query: {term: {code: input.toUpperCase()}},
+        size: 1
+    });
+
+    if(exactResult.hits.hits.length > 0){
+        return exactResult.hits.hits[0]._source;
+    }
+
+    try{
+        const suggestResult = await esClient.search({
+            index: STATION_INDEX,
+            suggest: {
+                station_suggest:{
+                    prefix: input,
+                    completion: {
+                        field: 'suggest',
+                        fuzzy: {fuzziness: 'AUTO'},
+                        size: 1
+                    }
+                }
+            }
+        });
+
+        const options = suggestResult.suggest?.station_suggest?.[0]?.options || [];
+
+        if(options.length > 0){
+            return options[0]._source;
+        }
+
+    }
+    catch(err){
+        logger.warn(`suggest fallback failed ${err.message}`);
+    }
+
+    const fuzzyResult = await esClient.search({
+        index: STATION_INDEX,
+        query: {
+            multi_match: {
+                query: input,
+                fields: ['name', 'city'],
+                fuzziness: 'AUTO',
+                prefix_length: 1,
+            },
+        },
+        size: 1,
+    });
+
+    return fuzzyResult.hits.hits.length > 0 ? fuzzyResult.hits.hits[0]._source : null;
+
+}
+
+const searchTrains = async (from, to, date) => {
+     const fromStation = await resolveStation(from);
+     const toStation = await resolveStation(to);
+
+     if (!fromStation) return { trains: [], message: `Station "${from}" not found` };
+     if (!toStation) return { trains: [], message: `Station "${to}" not found` };
+
+     const query = {
+          bool: {
+               must: [
+                    {
+                         nested: {
+                              path: 'route',
+                              query: { term: { 'route.stationId': fromStation.stationId } },
+                              inner_hits: { name: 'from_station' },
+                         },
+                    },
+                    {
+                         nested: {
+                              path: 'route',
+                              query: { term: { 'route.stationId': toStation.stationId } },
+                              inner_hits: { name: 'to_station' },
+                         },
+                    },
+               ],
+          },
+     };
+
+     const result = await esClient.search({
+          index: TRAIN_INDEX,
+          query,
+          size: 50,
+     });
+
+     const normalize = (d) => new Date(d).toISOString().slice(0, 10);
+
+     const trains = result.hits.hits
+          .map((hit) => {
+               const src = hit._source;
+               const fromHit = hit.inner_hits.from_station.hits.hits[0]?._source;
+               const toHit = hit.inner_hits.to_station.hits.hits[0]?._source;
+
+               if (!fromHit || !toHit || fromHit.sequenceNumber >= toHit.sequenceNumber) {
+                    return null;
+               }
+
+               let scheduleInfo = null;
+               if (date && src.schedules && src.schedules.length > 0) {
+                    scheduleInfo = src.schedules.find(
+                         (s) => s.status === 'ACTIVE' && normalize(s.departureDate) === date
+                    ) || null;
+               }
+
+               return {
+                    trainId: src.trainId,
+                    trainNumber: src.trainNumber,
+                    trainName: src.trainName,
+                    // --- SEGMENT BOOKING: Added stationId and sequenceNumber to from/to for segment-aware booking ---
+                    from: { name: fromHit.stationName, code: fromHit.stationCode, departure: fromHit.departureTime, stationId: fromHit.stationId, sequenceNumber: fromHit.sequenceNumber },
+                    to: { name: toHit.stationName, code: toHit.stationCode, arrival: toHit.arrivalTime, stationId: toHit.stationId, sequenceNumber: toHit.sequenceNumber },
+                    seatSummary: src.seatSummary,
+                    schedule: scheduleInfo,
+               };
+          })
+          .filter(Boolean);
+
+     return {
+          from: { resolved: fromStation.name, code: fromStation.code },
+          to: { resolved: toStation.name, code: toStation.code },
+          date: date || 'any',
+          count: trains.length,
+          trains,
+     };
+};
+
+const autocompleteStation = async (prefix) => {
+     const result = await esClient.search({
+          index: STATION_INDEX,
+          suggest: {
+               station_suggest: {
+                    prefix,
+                    completion: {
+                         field: 'suggest',
+                         fuzzy: { fuzziness: 'AUTO' },
+                         size: 10,
+                    },
+               },
+          },
+     });
+
+     const options = result.suggest.station_suggest[0]?.options || [];
+     return options.map((o) => ({
+          name: o._source.name,
+          code: o._source.code,
+          stationId: o._source.stationId,
+     }));
+};
+
+
 module.exports = {
     indexStation, 
     indexSchedule,
-    indexTrainRoute
+    indexTrainRoute,
+    serachTrains,
+    autocompleteStation
 }

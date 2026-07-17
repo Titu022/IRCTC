@@ -38,7 +38,7 @@ app.use(cookieParser());
 // app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Mount search routes at root (gateway strips first path segment)
-// app.use(searchRoutes);
+ app.use(searchRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok', service: process.env.SERVICE_NAME }));
 app.use(errorHandler);
